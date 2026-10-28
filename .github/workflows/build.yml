@@ -21,11 +21,12 @@ jobs:
 
     - name: Generate Project Files
       run: |
+        mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/xml
         mkdir -p app/src/main/java/com/bangla/voicewriter
 
-        # settings.gradle
+        # 1. settings.gradle
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -42,23 +43,33 @@ jobs:
             }
         }
         rootProject.name = "BanglaVoiceWriter"
-        include(":app")
+        include ':app'
         EOF
 
-        # root build.gradle
+        # 2. root build.gradle
         cat << 'EOF' > build.gradle
-        plugins {
-            id 'com.android.application' version '8.3.2' apply false
-            id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath 'com.android.tools.build:gradle:8.2.2'
+                classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
+            }
+        }
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
         }
         EOF
 
-        # app/build.gradle
+        # 3. app/build.gradle
         cat << 'EOF' > app/build.gradle
-        plugins {
-            id 'com.android.application'
-            id 'org.jetbrains.kotlin.android'
-        }
+        apply plugin: 'com.android.application'
+        apply plugin: 'kotlin-android'
 
         android {
             namespace 'com.bangla.voicewriter'
@@ -74,10 +85,10 @@ jobs:
 
             buildTypes {
                 release {
-                    isMinifyEnabled false
+                    minifyEnabled false
                 }
                 debug {
-                    isDebuggable true
+                    debuggable true
                 }
             }
 
@@ -86,28 +97,18 @@ jobs:
                 targetCompatibility JavaVersion.VERSION_17
             }
             kotlinOptions {
-                jvmTarget = '17'
-            }
-            buildFeatures {
-                compose true
-            }
-            composeOptions {
-                kotlinCompilerExtensionVersion '1.5.11'
+                jvmTarget = "17"
             }
         }
 
         dependencies {
-            implementation 'androidx.core:core-ktx:1.13.1'
-            implementation 'androidx.activity:activity-compose:1.9.0'
-            implementation platform('androidx.compose:compose-bom:2024.04.01')
-            implementation 'androidx.compose.ui:ui'
-            implementation 'androidx.compose.ui:ui-graphics'
-            implementation 'androidx.compose.material3:material3'
-            implementation 'androidx.compose.material:material-icons-extended'
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
         }
         EOF
 
-        # AndroidManifest.xml
+        # 4. AndroidManifest.xml
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -115,7 +116,7 @@ jobs:
             <application
                 android:label="বাংলা ভয়েস রাইটার"
                 android:supportsRtl="true"
-                android:theme="@android:style/Theme.Material.Light.NoActionBar">
+                android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
                 <activity
                     android:name=".MainActivity"
                     android:exported="true">
@@ -140,7 +141,7 @@ jobs:
         </manifest>
         EOF
 
-        # res/xml/method.xml
+        # 5. res/xml/method.xml
         cat << 'EOF' > app/src/main/res/xml/method.xml
         <?xml version="1.0" encoding="utf-8"?>
         <input-method xmlns:android="http://schemas.android.com/apk/res/android">
@@ -148,7 +149,64 @@ jobs:
         </input-method>
         EOF
 
-        # MainActivity.kt
+        # 6. res/values/strings.xml
+        cat << 'EOF' > app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">বাংলা ভয়েস রাইটার</string>
+        </resources>
+        EOF
+
+        # 7. res/layout/activity_main.xml (সুন্দর ক্লিন UI)
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center"
+            android:background="#121212">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="বাংলা ভয়েস রাইটার"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:id="@+id/tvResult"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="#1E1E1E"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:text="কথা বলতে নিচের মাইকে চাপ দিন..." />
+
+            <Button
+                android:id="@+id/btnMic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="🎤 কথা বলুন (বাংলা)"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:backgroundTint="#00897B" />
+
+            <Button
+                android:id="@+id/btnCopy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="টেক্সট কপি করুন"
+                android:backgroundTint="#333333" />
+        </LinearLayout>
+        EOF
+
+        # 8. MainActivity.kt
         cat << 'EOF' > app/src/main/java/com/bangla/voicewriter/MainActivity.kt
         package com.bangla.voicewriter
 
@@ -157,127 +215,102 @@ jobs:
         import android.content.ClipboardManager
         import android.content.Context
         import android.content.Intent
+        import android.content.pm.PackageManager
         import android.os.Bundle
         import android.speech.RecognitionListener
         import android.speech.RecognizerIntent
         import android.speech.SpeechRecognizer
+        import android.widget.Button
+        import android.widget.TextView
         import android.widget.Toast
-        import androidx.activity.ComponentActivity
-        import androidx.activity.compose.setContent
-        import androidx.activity.result.contract.ActivityResultContracts
-        import androidx.compose.foundation.background
-        import androidx.compose.foundation.layout.*
-        import androidx.compose.foundation.shape.CircleShape
-        import androidx.compose.foundation.shape.RoundedCornerShape
-        import androidx.compose.material.icons.Icons
-        import androidx.compose.material.icons.filled.ContentCopy
-        import androidx.compose.material.icons.filled.Mic
-        import androidx.compose.material.icons.filled.Stop
-        import androidx.compose.material3.*
-        import androidx.compose.runtime.*
-        import androidx.compose.ui.Alignment
-        import androidx.compose.ui.Modifier
-        import androidx.compose.ui.graphics.Color
-        import androidx.compose.ui.unit.dp
-        import androidx.compose.ui.unit.sp
+        import androidx.appcompat.app.AppCompatActivity
+        import androidx.core.app.ActivityCompat
+        import androidx.core.content.ContextCompat
 
-        class MainActivity : ComponentActivity() {
-            private val reqPerm = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+        class MainActivity : AppCompatActivity() {
+            private lateinit var recognizer: SpeechRecognizer
+            private lateinit var tvResult: TextView
+            private lateinit var btnMic: Button
+            private var isListening = false
 
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                reqPerm.launch(Manifest.permission.RECORD_AUDIO)
+                setContentView(R.layout.activity_main)
 
-                val recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+                tvResult = findViewById(R.id.tvResult)
+                btnMic = findViewById(R.id.btnMic)
+                val btnCopy: Button = findViewById(R.id.btnCopy)
 
-                setContent {
-                    var text by remember { mutableStateOf("মাইক্রোফোনে চাপ দিয়ে কথা বলুন") }
-                    var isListening by remember { mutableStateOf(false) }
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
+                }
 
-                    DisposableEffect(Unit) {
-                        recognizer.setRecognitionListener(object : RecognitionListener {
-                            override fun onReadyForSpeech(p: Bundle?) { isListening = true }
-                            override fun onEndOfSpeech() { isListening = false }
-                            override fun onError(e: Int) { isListening = false; text = "ত্রুটি হয়েছে (কোড: $e)" }
-                            override fun onResults(r: Bundle?) {
-                                isListening = false
-                                text = r?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull() ?: text
-                            }
-                            override fun onBeginningOfSpeech() {}
-                            override fun onRmsChanged(r: Float) {}
-                            override fun onBufferReceived(b: ByteArray?) {}
-                            override fun onPartialResults(p: Bundle?) {
-                                val partial = p?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-                                if (!partial.isNullOrBlank()) text = partial
-                            }
-                            override fun onEvent(t: Int, p: Bundle?) {}
-                        })
-                        onDispose { recognizer.destroy() }
+                recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+                recognizer.setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        tvResult.text = "শুনছি... এখন বাংলায় বলুন"
                     }
-
-                    MaterialTheme {
-                        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF121212)) {
-                            Column(
-                                modifier = Modifier.fillMaxSize().padding(20.dp),
-                                horizontalAlignment = Alignment.CenterVertically,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text("বাংলা ভয়েস রাইটার", fontSize = 24.sp, color = Color.White)
-                                Spacer(modifier = Modifier.height(20.dp))
-
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text(text, fontSize = 18.sp, color = Color.White)
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(30.dp))
-
-                                Button(
-                                    onClick = {
-                                        if (isListening) {
-                                            recognizer.stopListening()
-                                            isListening = false
-                                        } else {
-                                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")
-                                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                                            }
-                                            recognizer.startListening(intent)
-                                        }
-                                    },
-                                    modifier = Modifier.size(90.dp),
-                                    shape = CircleShape,
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (isListening) Color(0xFFD32F2F) else Color(0xFF00897B))
-                                ) {
-                                    Icon(if (isListening) Icons.Default.Stop else Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(44.dp), tint = Color.White)
-                                }
-
-                                Spacer(modifier = Modifier.height(20.dp))
-
-                                OutlinedButton(onClick = {
-                                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("BanglaText", text))
-                                    Toast.makeText(this@MainActivity, "কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
-                                }) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("টেক্সট কপি করুন")
-                                }
-                            }
+                    override fun onResults(results: Bundle?) {
+                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        if (!matches.isNullOrEmpty()) {
+                            tvResult.text = matches[0]
+                        }
+                        btnMic.text = "🎤 কথা বলুন (বাংলা)"
+                        isListening = false
+                    }
+                    override fun onError(error: Int) {
+                        tvResult.text = "ত্রুটি হয়েছে (কোড: $error)। পুনরায় বলুন।"
+                        btnMic.text = "🎤 কথা বলুন (বাংলা)"
+                        isListening = false
+                    }
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {}
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onEndOfSpeech() {
+                        btnMic.text = "🎤 কথা বলুন (বাংলা)"
+                        isListening = false
+                    }
+                    override fun onPartialResults(partialResults: Bundle?) {
+                        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        if (!matches.isNullOrEmpty()) {
+                            tvResult.text = matches[0]
                         }
                     }
+                    override fun onEvent(eventType: Int, params: Bundle?) {}
+                })
+
+                btnMic.setOnClickListener {
+                    if (isListening) {
+                        recognizer.stopListening()
+                        btnMic.text = "🎤 কথা বলুন (বাংলা)"
+                        isListening = false
+                    } else {
+                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")
+                            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                        }
+                        recognizer.startListening(intent)
+                        btnMic.text = "⏹️ থামাুন"
+                        isListening = true
+                    }
                 }
+
+                btnCopy.setOnClickListener {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Bangla", tvResult.text))
+                    Toast.makeText(this, "কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onDestroy() {
+                super.onDestroy()
+                recognizer.destroy()
             }
         }
         EOF
 
-        # BanglaIME.kt
+        # 9. BanglaIME.kt (সিস্টেম কীবোর্ড)
         cat << 'EOF' > app/src/main/java/com/bangla/voicewriter/BanglaIME.kt
         package com.bangla.voicewriter
 
